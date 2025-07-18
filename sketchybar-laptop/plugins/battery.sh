@@ -7,6 +7,11 @@ if [ "$PERCENTAGE" = "" ]; then
   exit 0
 fi
 
+source "$CONFIG_DIR/colors.sh"
+if [ "$PERCENTAGE" -lt 20 ]; then
+  sketchybar --set "$NAME" label.color=$RED
+fi  
+
 case "${PERCENTAGE}" in
   9[0-9]|100) ICON=""
   ;;

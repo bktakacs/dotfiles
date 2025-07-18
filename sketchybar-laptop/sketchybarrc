@@ -44,8 +44,8 @@ sketchybar --bar "${bar[@]}"
 
 default=(
   updates=on
-  padding_left=5
-  padding_right=5
+  padding_left=2
+  padding_right=2
   #icon.font="Hack Nerd Font:Bold:16.0"
   #label.font="SF Pro:Semibold:16.0"
   label.font="MonaspiceAr NF Medium:Medium:16.0"
