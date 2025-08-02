@@ -1,0 +1,175 @@
+# A simple sketchybar config for aerospace users to get started with
+# Not too different from the base starting config!
+
+PLUGIN_DIR="$CONFIG_DIR/plugins"
+ITEM_DIR="$CONFIG_DIR/items"
+source "$CONFIG_DIR/colors.sh"
+
+SPOTIFY_EVENT="com.spotify.client.PlaybackStateChanged"
+
+killall stats_provider
+$CONFIG_DIR/sketchybar-system-stats/target/release/stats_provider --cpu usage --memory ram_usage swp_usage &
+
+
+##### Bar Appearance #####
+# Configuring the general appearance of the bar.
+# These are only some of the options available. For all options see:
+# https://felixkratz.github.io/SketchyBar/config/bar
+# If you are looking for other colors, see the color picker:
+# https://felixkratz.github.io/SketchyBar/config/tricks#color-picker
+bar=(
+  height=36 
+  color=$TRANSPARENT
+  border_width=2
+  border_color=$BAR_BORDER_COLOR
+  shadow=off
+  position=top
+  sticky=on
+  padding_right=10
+  padding_left=10
+  y_offset=0
+  margin=-2
+  topmost=window
+  color=0x00000000
+  border_color=0x00000000
+)
+
+sketchybar --bar "${bar[@]}"
+#sketchybar --bar position=top height=34 blur_radius=0 color=$TRANSPARENT
+
+##### Changing Defaults #####
+# We now change some default values, which are applied to all further items.
+# For a full list of all available item properties see:
+# https://felixkratz.github.io/SketchyBar/config/items
+
+default=(
+  updates=on
+  padding_left=2
+  padding_right=2
+  #icon.font="Hack Nerd Font:Bold:16.0"
+  #label.font="SF Pro:Semibold:16.0"
+  label.font="MonaspiceAr NF Medium:Medium:16.0"
+  icon.font="MonaspiceAr NF Medium:Medium:16.0"
+  icon.color=$WHITE
+  label.color=$WHITE
+  icon.padding_left=4
+  icon.padding_right=4
+  label.padding_left=4
+  label.padding_right=4
+  background.corner_radius=9
+  background.border_width=2
+  background.height=26
+)
+sketchybar --default "${default[@]}"
+
+##### Adding aeropsace layouts #####
+
+# Add the aerospace_workspace_change event we specified in aerospace.toml
+sketchybar --add event aerospace_workspace_change
+
+# This only works for single monitor configs!
+for m in $(aerospace list-monitors | awk -F'|' ' {print $1 } '); do
+  for sid in $(aerospace list-workspaces --monitor $m); do
+  #for sid in "${SPACE_IDS[@]}"; do
+  sketchybar --add item space.$sid left \
+    --subscribe space.$sid aerospace_workspace_change \
+    --set space.$sid \
+    drawing=off \
+    display=$m \
+    background.color=$BG1 \
+    background.corner_radius=9 \
+    background.drawing=on \
+    background.border_color=$MOONGRAY \
+    background.border_width=0 \
+    background.height=24 \
+    icon="$sid" \
+    icon.padding_left=10 \
+    icon.shadow.distance=4 \
+    icon.shadow.color=0xA0000000 \
+    label.font="sketchybar-app-font:Regular:16.0" \
+    label.padding_right=20 \
+    label.padding_left=0 \
+    label.y_offset=-1 \
+    label.shadow.drawing=off \
+    label.shadow.color=0xA0000000 \
+    label.shadow.distance=4 \
+    click_script="aerospace workspace $sid" \
+    script="$CONFIG_DIR/plugins/aerospace.sh $sid"
+  done
+done
+
+# Load Icons on startup
+for m in $(aerospace list-monitors | awk -F'|' ' {print $1 } '); do
+  for sid in $(aerospace list-workspaces --monitor $m --empty no); do
+	  apps=$(aerospace list-windows --workspace "$sid" | awk -F'|' '{gsub(/^ *| *$/, "", $2); print $2}')
+
+	  sketchybar --set space.$sid drawing=on
+
+	  icon_strip=" "
+	  if [ "${apps}" != "" ]; then
+	    while read -r app; do
+	      icon_strip+=" $($CONFIG_DIR/plugins/icon_map_fn.sh "$app")"
+	    done <<<"${apps}"
+	  else
+	    icon_strip=""
+	  fi
+	  sketchybar --set space.$sid label="$icon_strip"
+  done
+done
+
+sketchybar --add item space_separator left \
+  --set space_separator icon="💩" \
+  icon.padding_left=0 \
+  label.drawing=off \
+  icon.drawing=off \
+  background.drawing=off \
+  script="$PLUGIN_DIR/space_windows.sh" \
+  --subscribe space_separator aerospace_workspace_change front_app_switched space_windows_change
+
+# Front app!!
+sketchybar --add item front_app left \
+  --set front_app icon.drawing=off \
+		  background.drawing=on \
+		  background.color=$BACKGROUND_1 \
+		  background.border_color=$BACKGROUND_2 \
+ 		  label.padding_left=10 \
+		  label.padding_right=10 \
+  script="$PLUGIN_DIR/front_app.sh" \
+  --subscribe front_app front_app_switched
+
+
+# CENTER ITEM
+source "$ITEM_DIR/spotify.sh"
+
+
+
+##### Adding Right Items #####
+# In the same way as the left items we can add items to the right side.
+# Additional position (e.g. center) are available, see:
+# https://felixkratz.github.io/SketchyBar/config/items#adding-items-to-sketchybar
+
+# Some items refresh on a fixed cycle, e.g. the clock runs its script once
+# every 10s. Other gititems respond to events they subscribe to, e.g. the
+# volume.sh script is only executed once an actual change in system audio
+# volume is registered. More info about the event system can be found here:
+# https://felixkratz.github.io/SketchyBar/config/events
+
+source "$ITEM_DIR/calendar.sh"
+source "$ITEM_DIR/battery.sh"
+source "$ITEM_DIR/volume.sh"
+source "$ITEM_DIR/stats_toggle.sh"
+source "$ITEM_DIR/cpu.sh"
+source "$ITEM_DIR/memory.sh"
+source "$ITEM_DIR/disk.sh"
+
+# Toggle stats initially for a clean setup
+source "$PLUGIN_DIR/stats_toggle.sh"
+
+sketchybar --add bracket rightside calendar battery volume stats_toggle cpu memory disk \
+	   --set         rightside background.color=$BACKGROUND_1 \
+            background.border_color=$BACKGROUND_2
+
+sketchybar --hotload on
+
+##### Force all scripts to run the first time (never do this in a script) #####
+sketchybar --update
