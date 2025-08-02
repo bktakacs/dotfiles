@@ -44,13 +44,12 @@ sketchybar --bar "${bar[@]}"
 
 default=(
   updates=on
-  height=34
   padding_left=5
   padding_right=5
   #icon.font="Hack Nerd Font:Bold:16.0"
   #label.font="SF Pro:Semibold:16.0"
-  label.font="Monaspace Krypton Medium:Medium:15.0"
-  icon.font="Monaspace Krypton Medium:Medium:15.0"
+  label.font="Monaspace Argon Medium:Medium:15.0"
+  icon.font="Monaspace Argon Medium:Medium:15.0"
   icon.color=$WHITE
   label.color=$WHITE
   icon.padding_left=4
@@ -58,7 +57,7 @@ default=(
   label.padding_left=4
   label.padding_right=4
   background.corner_radius=9
-  background.border_width=2
+  background.border_width=1
   background.height=26
 )
 sketchybar --default "${default[@]}"
@@ -99,6 +98,8 @@ for m in $(aerospace list-monitors | awk -F'|' ' {print $1 } '); do
   done
 done
 
+sketchybar --set space.1 padding_left=0
+
 # Load Icons on startup
 for m in $(aerospace list-monitors | awk -F'|' ' {print $1 } '); do
   for sid in $(aerospace list-workspaces --monitor $m --empty no); do
@@ -132,7 +133,7 @@ sketchybar --add item front_app left \
   --set front_app icon.drawing=off \
 		  background.drawing=on \
 		  background.color=$BACKGROUND_1 \
-		  background.border_color=$BACKGROUND_2 \
+		  background.border_color=$WHITE \
  		  label.padding_left=10 \
 		  label.padding_right=10 \
   script="$PLUGIN_DIR/front_app.sh" \
@@ -157,16 +158,26 @@ source "$ITEM_DIR/spotify.sh"
 
 source "$ITEM_DIR/calendar.sh"
 source "$ITEM_DIR/volume.sh"
+source "$ITEM_DIR/stats_toggle.sh"
 source "$ITEM_DIR/power.sh"
+
 source "$ITEM_DIR/cpu.sh"
+# sketchybar --add item cpu right \
+#            --set cpu script="sketchybar --set cpu label=\$CPU_USAGE" \
+#                      icon="􀫥" \
+#            --subscribe cpu system_stats
+
 source "$ITEM_DIR/memory.sh"
 source "$ITEM_DIR/disk.sh"
 
+# Toggle stats initially for a clean setup, otherwise comment this out
+source "$PLUGIN_DIR/stats_toggle.sh"
+
+sketchybar --add bracket rightside calendar volume power cpu memory disk stats_toggle \
+           --set         rightside background.color=$BG1 background.border_color=$WHITE
 
 
-sketchybar --add bracket rightside calendar volume power cpu memory disk \
-	   --set         rightside background.color=$BG1 
-
+sketchybar --hotload on
 
 
 ##### Force all scripts to run the first time (never do this in a script) #####
